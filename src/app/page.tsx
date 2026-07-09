@@ -1,78 +1,74 @@
-// import Image from "next/image";
-
-// export default function Home() {
-//   return (
-//     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-//       <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-//         <Image
-//           className="dark:invert"
-//           src="/next.svg"
-//           alt="Next.js logo"
-//           width={100}
-//           height={20}
-//           priority
-//         />
-//         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-//           <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-//             To get started, edit the page.tsx file.
-//           </h1>
-//           <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-//             Looking for a starting point or more instructions? Head over to{" "}
-//             <a
-//               href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-//               className="font-medium text-zinc-950 dark:text-zinc-50"
-//             >
-//               Templates
-//             </a>{" "}
-//             or the{" "}
-//             <a
-//               href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-//               className="font-medium text-zinc-950 dark:text-zinc-50"
-//             >
-//               Learning
-//             </a>{" "}
-//             center.
-//           </p>
-//         </div>
-//         <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-//           <a
-//             className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-//             href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-//             target="_blank"
-//             rel="noopener noreferrer"
-//           >
-//             <Image
-//               className="dark:invert"
-//               src="/vercel.svg"
-//               alt="Vercel logomark"
-//               width={16}
-//               height={16}
-//             />
-//             Deploy Now
-//           </a>
-//           <a
-//             className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-//             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-//             target="_blank"
-//             rel="noopener noreferrer"
-//           >
-//             Documentation
-//           </a>
-//         </div>
-//       </main>
-//     </div>
-//   );
-// }
+import Link from "next/link";
+import { getServerUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { ArrowRight, ShieldCheck, Zap, Coins } from "lucide-react";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getServerUser();
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6">
-      <h1 className="text-5xl font-bold">CouponSwap</h1>
-      <p className="text-muted-foreground text-center max-w-md">
-        Buy and sell unused coupons and gift cards at the best prices.
-      </p>
-      <Button>Coming Soon 🚀</Button>
+    <main className="flex-1 flex flex-col justify-center items-center py-20 px-4 md:px-8 text-center max-w-5xl mx-auto w-full">
+      <div className="space-y-6 max-w-3xl">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 animate-pulse">
+          <span>Phase 1 Authentication Live 🎉</span>
+        </div>
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-zinc-950 via-zinc-800 to-zinc-600 dark:from-zinc-50 dark:via-zinc-300 dark:to-zinc-500 leading-tight">
+          P2P Coupon & Gift Card Marketplace
+        </h1>
+        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          Buy and sell unused coupons and gift cards at the best prices. Safely swap, negotiate, and verify codes automatically.
+        </p>
+
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
+          {user ? (
+            <Link href="/dashboard" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto h-11 text-base font-semibold group cursor-pointer">
+                Go to Dashboard
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/login" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto h-11 text-base font-semibold group cursor-pointer">
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24 w-full text-left">
+        <div className="flex flex-col items-start p-6 bg-card border border-border/40 rounded-xl space-y-3">
+          <div className="p-3 bg-primary/10 rounded-lg text-primary">
+            <Zap className="h-6 w-6" />
+          </div>
+          <h3 className="text-lg font-bold">Instant Magic Link</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            No passwords to remember. Authenticate securely with a single-use magic login link delivered right to your inbox.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-start p-6 bg-card border border-border/40 rounded-xl space-y-3">
+          <div className="p-3 bg-primary/10 rounded-lg text-primary">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <h3 className="text-lg font-bold">Secure User Profiles</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Automatic profile creation and DB synchronization powered by Supabase Auth and Prisma ORM with PostgreSQL.
+          </p>
+        </div>
+
+        <div className="flex flex-col items-start p-6 bg-card border border-border/40 rounded-xl space-y-3">
+          <div className="p-3 bg-primary/10 rounded-lg text-primary">
+            <Coins className="h-6 w-6" />
+          </div>
+          <h3 className="text-lg font-bold">Escrow Swap System</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Swap coupons with confidence. Future phases will introduce automatic code locks, payments, and trade negotiations.
+          </p>
+        </div>
+      </div>
     </main>
   );
 }
