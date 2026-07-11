@@ -1,22 +1,48 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String?  @unique
-  phone       String?  @unique
+  id          String    @id @default(cuid())
+  email       String?   @unique
+  phone       String?   @unique
   name        String?
   avatarUrl   String?
-  ratingAvg   Float    @default(0)
-  ratingCount Int      @default(0)
-  isAdmin     Boolean  @default(false)
+  ratingAvg   Float     @default(0)
+  ratingCount Int       @default(0)
+  isAdmin     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  listings    Listing[]
+}
 
+model Listing {
+  id          String   @id @default(cuid())
+  sellerId    String
+  brand       String
+  slug        String
+  category    String
+  faceValue   Decimal  @db.Decimal(10, 2)
+  askingPrice Decimal  @db.Decimal(10, 2)
+  expiryDate  DateTime
+  couponType  String
+  imageUrl    String?
+  status      String   @default("active")
+  description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  seller      User     @relation(fields: [sellerId], references: [id])
+
+  @@index([sellerId])
+  @@index([status])
+  @@index([category])
+  @@index([brand])
+  @@index([expiryDate])
 }

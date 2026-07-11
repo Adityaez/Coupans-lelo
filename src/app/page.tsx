@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getServerUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ShieldCheck, Zap, Coins } from "lucide-react";
+import { ArrowRight, ShieldCheck, Zap, Coins, Search } from "lucide-react";
 
 export default async function Home() {
   const user = await getServerUser();
@@ -10,7 +10,7 @@ export default async function Home() {
     <main className="flex-1 flex flex-col justify-center items-center py-20 px-4 md:px-8 text-center max-w-5xl mx-auto w-full">
       <div className="space-y-6 max-w-3xl">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 animate-pulse">
-          <span>Phase 1 Authentication Live 🎉</span>
+          <span>Phase 2 Listings Live 🎉</span>
         </div>
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-zinc-950 via-zinc-800 to-zinc-600 dark:from-zinc-50 dark:via-zinc-300 dark:to-zinc-500 leading-tight">
           P2P Coupon & Gift Card Marketplace
@@ -35,6 +35,12 @@ export default async function Home() {
               </Button>
             </Link>
           )}
+          <Link href="/listings" className="w-full sm:w-auto">
+            <Button size="lg" variant="outline" className="w-full sm:w-auto h-11 text-base font-semibold group cursor-pointer">
+              <Search className="mr-2 h-4 w-4" />
+              Browse Coupons
+            </Button>
+          </Link>
         </div>
       </div>
 

@@ -16,6 +16,13 @@ export async function Navbar() {
             CouponSwap
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            {/* Browse — always visible (public page) */}
+            <Link
+              href="/listings"
+              className="transition-colors hover:text-foreground"
+            >
+              Browse
+            </Link>
             {user && (
               <>
                 <Link
