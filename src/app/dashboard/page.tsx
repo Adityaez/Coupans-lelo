@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MyListingCard } from "@/components/listings/my-listing-card";
-import { Plus, Package, Search } from "lucide-react";
+import { OfferList } from "@/components/offers/offer-list";
+import { Plus, Package, Search, MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -59,6 +60,33 @@ export default async function DashboardPage(props: {
   const activeListings = myListings.filter((l) => l.status === "active");
   const soldListings = myListings.filter((l) => l.status === "sold");
 
+  // Fetch offers received on user's listings
+  const offersReceived = await prisma.offer.findMany({
+    where: {
+      listing: { sellerId: user.id },
+    },
+    include: {
+      listing: { select: { id: true, slug: true, brand: true, category: true, askingPrice: true } },
+      buyer: { select: { name: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  // Fetch offers made by user as buyer (includes seller name for display)
+  const offersMadeWithSeller = await prisma.offer.findMany({
+    where: { buyerId: user.id },
+    include: {
+      listing: {
+        select: { id: true, slug: true, brand: true, category: true, askingPrice: true, seller: { select: { name: true } } },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const totalOffers = offersReceived.length + offersMadeWithSeller.length;
+  const activeOffers = offersReceived.filter((o) => o.status === "pending" || o.status === "countered").length
+    + offersMadeWithSeller.filter((o) => o.status === "pending" || o.status === "countered").length;
+
   const joinedDate = new Date(profile.createdAt).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -98,6 +126,14 @@ export default async function DashboardPage(props: {
           <TabsList className="h-10">
             <TabsTrigger value="overview" className="px-4 cursor-pointer">
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="offers" className="px-4 cursor-pointer">
+              Offers
+              {activeOffers > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-[10px] font-bold">
+                  {activeOffers}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="listings" className="px-4 cursor-pointer">
               My Listings
@@ -201,6 +237,63 @@ export default async function DashboardPage(props: {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Offers Tab */}
+          <TabsContent value="offers" className="space-y-6">
+            {/* Offers Received */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Offers Received</h3>
+                <span className="text-xs text-muted-foreground">({offersReceived.length})</span>
+              </div>
+              <OfferList
+                perspective="seller"
+                emptyMessage="No offers received yet. List a coupon and wait for buyers!"
+                offers={offersReceived.map((o) => ({
+                  id: o.id,
+                  amount: Number(o.amount),
+                  status: o.status,
+                  updatedAt: o.updatedAt.toISOString(),
+                  listing: {
+                    id: o.listing.id,
+                    slug: o.listing.slug,
+                    brand: o.listing.brand,
+                    category: o.listing.category,
+                    askingPrice: Number(o.listing.askingPrice),
+                  },
+                  counterparty: { name: o.buyer.name },
+                }))}
+              />
+            </div>
+
+            {/* Offers Made */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold">Offers Made</h3>
+                <span className="text-xs text-muted-foreground">({offersMadeWithSeller.length})</span>
+              </div>
+              <OfferList
+                perspective="buyer"
+                emptyMessage="You haven't made any offers yet. Browse listings to find deals!"
+                offers={offersMadeWithSeller.map((o) => ({
+                  id: o.id,
+                  amount: Number(o.amount),
+                  status: o.status,
+                  updatedAt: o.updatedAt.toISOString(),
+                  listing: {
+                    id: o.listing.id,
+                    slug: o.listing.slug,
+                    brand: o.listing.brand,
+                    category: o.listing.category,
+                    askingPrice: Number(o.listing.askingPrice),
+                  },
+                  counterparty: { name: o.listing.seller.name },
+                }))}
+              />
+            </div>
           </TabsContent>
 
           {/* My Listings Tab */}

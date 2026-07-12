@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getServerUser } from "@/lib/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export async function Navbar() {
   const user = await getServerUser();
@@ -50,7 +51,8 @@ export async function Navbar() {
 
         <div className="flex items-center gap-4">
           {user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <NotificationBell />
               <span className="hidden sm:inline-block text-sm text-muted-foreground">
                 {user.email}
               </span>

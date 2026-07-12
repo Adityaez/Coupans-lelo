@@ -7,9 +7,12 @@ import {
   formatPrice,
   daysUntilExpiry,
 } from "@/lib/listing-constants";
+import { TERMINAL_STATUSES } from "@/lib/offer-constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { MakeOfferDialog } from "@/components/offers/make-offer-dialog";
+import { OfferThread } from "@/components/offers/offer-thread";
 import {
   Tag,
   Clock,
@@ -19,11 +22,11 @@ import {
   Star,
   CalendarDays,
   ShieldCheck,
-  MessageSquare,
 } from "lucide-react";
 import type { Metadata } from "next";
 
 type Params = Promise<{ slug: string }>;
+type SearchParams = Promise<{ offerId?: string }>;
 
 export async function generateMetadata(props: {
   params: Params;
@@ -56,6 +59,7 @@ export async function generateMetadata(props: {
 
 export default async function ListingDetailPage(props: {
   params: Params;
+  searchParams: SearchParams;
 }) {
   const { slug } = await props.params;
   // Extract ID from the slug format: "{id}-{slug-text}"
@@ -81,8 +85,59 @@ export default async function ListingDetailPage(props: {
     notFound();
   }
 
+  // Resolve searchParams if any
+  const { offerId } = await props.searchParams;
+
   const user = await getServerUser();
   const isOwner = user?.id === listing.sellerId;
+
+  let activeOfferIdToShow: string | null = null;
+  let listingOffers: any[] = [];
+
+  if (user) {
+    if (isOwner) {
+      listingOffers = await prisma.offer.findMany({
+        where: { listingId: listing.id },
+        include: {
+          buyer: { select: { name: true, email: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+      });
+
+      if (offerId) {
+        const found = listingOffers.find((o) => o.id === offerId);
+        if (found) {
+          activeOfferIdToShow = found.id;
+        }
+      } else {
+        // Auto-select if there is exactly one active offer
+        const nonTerminal = listingOffers.filter(
+          (o) => !TERMINAL_STATUSES.includes(o.status as any)
+        );
+        if (nonTerminal.length === 1) {
+          activeOfferIdToShow = nonTerminal[0].id;
+        } else if (listingOffers.length === 1) {
+          activeOfferIdToShow = listingOffers[0].id;
+        }
+      }
+    } else {
+      // Buyer view: Fetch their own offer
+      const offer = await prisma.offer.findUnique({
+        where: {
+          listingId_buyerId: {
+            listingId: listing.id,
+            buyerId: user.id,
+          },
+        },
+        select: { id: true, status: true },
+      });
+      if (offer && !TERMINAL_STATUSES.includes(offer.status as (typeof TERMINAL_STATUSES)[number])) {
+        activeOfferIdToShow = offer.id;
+      }
+    }
+  }
+
+  const hasExistingOffer = !isOwner && activeOfferIdToShow !== null;
 
   const faceValue = Number(listing.faceValue);
   const askingPrice = Number(listing.askingPrice);
@@ -285,20 +340,33 @@ export default async function ListingDetailPage(props: {
                         Edit Listing
                       </Button>
                     </Link>
+                  ) : user ? (
+                    <MakeOfferDialog
+                      listingId={listing.id}
+                      askingPrice={askingPrice}
+                      faceValue={faceValue}
+                      brand={listing.brand}
+                      hasExistingOffer={hasExistingOffer}
+                    />
                   ) : (
-                    <Button
-                      className="w-full h-12 text-base font-semibold cursor-pointer"
-                      disabled
-                      title="Coming in Phase 3"
-                    >
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      Make an Offer
-                    </Button>
+                    <Link href={`/login?next=/listings/${listing.id}-${listing.slug}`} className="block">
+                      <Button className="w-full h-12 text-base font-semibold cursor-pointer">
+                        Login to Make an Offer
+                      </Button>
+                    </Link>
                   )}
                   <p className="text-xs text-center text-muted-foreground">
                     <ShieldCheck className="inline h-3 w-3 mr-1" />
                     Protected by CouponSwap Escrow
                   </p>
+                </div>
+              )}
+
+              {listing.status === "negotiating" && (
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3 text-center">
+                  <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    An offer has been accepted — awaiting payment
+                  </span>
                 </div>
               )}
 
@@ -348,6 +416,64 @@ export default async function ListingDetailPage(props: {
                 </div>
               </div>
             </div>
+
+            {/* If seller is viewing their own listing and there are multiple offers, and none is selected, show list of offers */}
+            {isOwner && listingOffers.length > 0 && !activeOfferIdToShow && (
+              <div className="rounded-xl border border-border/50 bg-card p-5 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-base">Offers Received ({listingOffers.length})</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Select an offer below to view the negotiation history and respond.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {listingOffers.map((o) => (
+                    <Link
+                      key={o.id}
+                      href={`/listings/${listing.id}-${listing.slug}?offerId=${o.id}`}
+                      className="block group"
+                    >
+                      <div className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors">
+                        <div>
+                          <p className="text-sm font-semibold">
+                            From {o.buyer.name || o.buyer.email || "Buyer"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Status: <span className="font-medium capitalize">{o.status}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold">{formatPrice(Number(o.amount))}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            updated {new Date(o.updatedAt).toLocaleDateString("en-IN")}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Offer Thread — shown when buyer/seller has an active or selected offer */}
+            {activeOfferIdToShow && user && (
+              <div className="space-y-3">
+                {isOwner && listingOffers.length > 1 && (
+                  <Link
+                    href={`/listings/${listing.id}-${listing.slug}`}
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium mb-1"
+                  >
+                    ← Back to all offers ({listingOffers.length})
+                  </Link>
+                )}
+                <OfferThread
+                  offerId={activeOfferIdToShow}
+                  currentUserId={user.id}
+                  askingPrice={askingPrice}
+                  brand={listing.brand}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
