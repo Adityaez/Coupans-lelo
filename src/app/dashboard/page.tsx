@@ -86,6 +86,9 @@ export default async function DashboardPage(props: {
     console.error("Dashboard DB fetch error:", error);
   }
 
+  const activeListings = myListings.filter((l) => l.status === "active");
+  const soldListings = myListings.filter((l) => l.status === "sold");
+
   const totalOffers = offersReceived.length + offersMadeWithSeller.length;
   const activeOffers = offersReceived.filter((o) => o.status === "pending" || o.status === "countered").length
     + offersMadeWithSeller.filter((o) => o.status === "pending" || o.status === "countered").length;
