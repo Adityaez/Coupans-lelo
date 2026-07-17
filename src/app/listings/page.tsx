@@ -84,20 +84,29 @@ export default async function ListingsPage(props: {
       orderBy = { createdAt: "desc" };
   }
 
-  const [allListings, total] = await Promise.all([
-    prisma.listing.findMany({
-      where,
-      include: {
-        seller: {
-          select: { name: true, avatarUrl: true, ratingAvg: true },
+  let allListings: any[] = [];
+  let total = 0;
+
+  try {
+    const res = await Promise.all([
+      prisma.listing.findMany({
+        where,
+        include: {
+          seller: {
+            select: { name: true, avatarUrl: true, ratingAvg: true },
+          },
         },
-      },
-      orderBy,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
-    prisma.listing.count({ where }),
-  ]);
+        orderBy,
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+      }),
+      prisma.listing.count({ where }),
+    ]);
+    allListings = res[0];
+    total = res[1];
+  } catch (error) {
+    console.error("Listings DB query error:", error);
+  }
 
   // Apply discount filter + discount sort in memory (computed field)
   let listings = allListings.map((l) => ({
