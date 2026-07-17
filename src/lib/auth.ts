@@ -55,7 +55,11 @@ export async function getServerProfile() {
   const user = await getServerUser();
   if (!user) return null;
 
-  return await prisma.user.findUnique({
-    where: { id: user.id },
-  });
+  try {
+    return await prisma.user.findUnique({
+      where: { id: user.id },
+    });
+  } catch {
+    return null;
+  }
 }

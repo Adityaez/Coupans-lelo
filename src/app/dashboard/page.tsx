@@ -52,36 +52,39 @@ export default async function DashboardPage(props: {
   }
 
   // Fetch user's listings
-  const myListings = await prisma.listing.findMany({
-    where: { sellerId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  let myListings: Awaited<ReturnType<typeof prisma.listing.findMany>> = [];
+  let offersReceived: Awaited<ReturnType<typeof prisma.offer.findMany>> = [];
+  let offersMadeWithSeller: Awaited<ReturnType<typeof prisma.offer.findMany>> = [];
 
-  const activeListings = myListings.filter((l) => l.status === "active");
-  const soldListings = myListings.filter((l) => l.status === "sold");
+  try {
+    myListings = await prisma.listing.findMany({
+      where: { sellerId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
 
-  // Fetch offers received on user's listings
-  const offersReceived = await prisma.offer.findMany({
-    where: {
-      listing: { sellerId: user.id },
-    },
-    include: {
-      listing: { select: { id: true, slug: true, brand: true, category: true, askingPrice: true } },
-      buyer: { select: { name: true } },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  // Fetch offers made by user as buyer (includes seller name for display)
-  const offersMadeWithSeller = await prisma.offer.findMany({
-    where: { buyerId: user.id },
-    include: {
-      listing: {
-        select: { id: true, slug: true, brand: true, category: true, askingPrice: true, seller: { select: { name: true } } },
+    offersReceived = await prisma.offer.findMany({
+      where: {
+        listing: { sellerId: user.id },
       },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+      include: {
+        listing: { select: { id: true, slug: true, brand: true, category: true, askingPrice: true } },
+        buyer: { select: { name: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    offersMadeWithSeller = await prisma.offer.findMany({
+      where: { buyerId: user.id },
+      include: {
+        listing: {
+          select: { id: true, slug: true, brand: true, category: true, askingPrice: true, seller: { select: { name: true } } },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+  } catch (error) {
+    console.error("Dashboard DB fetch error:", error);
+  }
 
   const totalOffers = offersReceived.length + offersMadeWithSeller.length;
   const activeOffers = offersReceived.filter((o) => o.status === "pending" || o.status === "countered").length
