@@ -17,11 +17,30 @@ import { MyListingCard } from "@/components/listings/my-listing-card";
 import { OfferList } from "@/components/offers/offer-list";
 import { Plus, Package, Search, MessageSquare } from "lucide-react";
 import type { Metadata } from "next";
+import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = {
   title: "Dashboard | CouponSwap",
   description: "Manage your CouponSwap account, listings, and trade deals.",
 };
+
+type OfferReceived = Prisma.OfferGetPayload<{
+  include: {
+    listing: { select: { id: true; slug: true; brand: true; category: true; askingPrice: true } };
+    buyer: { select: { name: true } };
+  };
+}>;
+
+type OfferMade = Prisma.OfferGetPayload<{
+  include: {
+    listing: {
+      select: {
+        id: true; slug: true; brand: true; category: true; askingPrice: true;
+        seller: { select: { name: true } };
+      };
+    };
+  };
+}>;
 
 type SearchParams = Promise<{ tab?: string }>;
 
@@ -53,8 +72,8 @@ export default async function DashboardPage(props: {
 
   // Fetch user's listings
   let myListings: Awaited<ReturnType<typeof prisma.listing.findMany>> = [];
-  let offersReceived: Awaited<ReturnType<typeof prisma.offer.findMany>> = [];
-  let offersMadeWithSeller: Awaited<ReturnType<typeof prisma.offer.findMany>> = [];
+  let offersReceived: OfferReceived[] = [];
+  let offersMadeWithSeller: OfferMade[] = [];
 
   try {
     myListings = await prisma.listing.findMany({
