@@ -9,6 +9,8 @@ import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = Promise<{
   q?: string;
   category?: string;
