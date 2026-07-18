@@ -58,8 +58,9 @@ export async function GET(request: NextRequest) {
             isAdmin: false,
           },
         });
-      } catch {
-        // DB sync failed but auth succeeded — don't block the login
+      } catch (dbError) {
+        // Log the actual error so we can diagnose DB issues on Vercel
+        console.error("Auth callback: DB sync failed for user", user.id, dbError);
       }
 
       // Return the response with session cookies attached
